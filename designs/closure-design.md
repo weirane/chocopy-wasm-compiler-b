@@ -160,4 +160,33 @@ represent a closure with a class (a callable object), where each non-local
 variable is a field in the class. The class will have a method called `__call__`,
 which will have the original closure body.
 
-The memory layout will be the layout of the class representing the closure.
+Take the third test case as an example: The user enters the code below
+
+```python
+def getAdder(a:int) -> Callable[[int], int]:
+    def adder(b: int) -> int:
+        return a + b
+    return adder
+```
+
+Our `parser.ts` shall produce an AST with one function that returns a closure.
+
+Our `lower.ts` shall perform escape analysis (mentioned in the tutorial) and
+transform the AST into the following intermediate representation (imaging we
+have a text format for this):
+
+```python
+class Closure1(object):
+    a: int = 0
+    def __call__(self: Closure1, b: int) -> int:
+        return self.a + b
+
+def getAdder(a:int) -> Callable[[int], int]:
+    adder: Closure1 = None
+    adder = Closure1()
+    adder.a = a
+    return adder
+```
+
+Hence, the value representation of a closure at runtime is the address of the
+closure class instance 
