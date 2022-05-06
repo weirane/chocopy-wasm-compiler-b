@@ -2,6 +2,87 @@
 
 ## test cases
 
+```python
+# parse callable, and lower that to a class in the IR
+# pass type check
+f: Callable[[int], int] = None  
+```
+
+```python
+# parse callable, and lower that to a class in the IR
+# type error
+f: Callable[[int], int] = None  
+g: Callable[[bool], int] = None
+f = g
+```
+
+```python
+# `is` should work on the callable object
+# expect True
+f: Callable[[int], int] = None  
+f is None 
+```
+
+```python
+# parse and type check closure
+# type check 
+def getAdder(a:int) -> Callable[[int], int]:
+    def adder(b: int) -> int:
+        return a + b
+    return adder
+# the remaining tests all require this definition at top
+```
+
+```python
+# the returned function can be called
+# expect: 3
+getAdder(1)(2) 
+```
+
+```python
+# assign a closure to a global variable
+# pass type check
+f: Callable[[int], int] = None
+f = getAdder(1) 
+```
+
+```python
+# assign and call
+# expect 3
+f: Callable[[int], int] = None
+f = getAdder(1) 
+f(2) 
+```
+
+```python
+# the returned closures are different objects
+# expect false
+f: Callable[[int], int] = None
+f = getAdder(1) 
+g: Callable[[int], int] = None
+g = getAdder(1) 
+f is g
+```
+
+```python
+# pass the same closure around and use `is` operator
+# expect true
+f: Callable[[int], int] = None
+f = getAdder(1) 
+g: Callable[[int], int] = None
+g = f
+f is g
+```
+
+```python
+# lexical scoping
+# expect 3
+a: int = 10
+f: Callable[[int], int] = None
+f = getAdder(1) 
+f(2) 
+```
+
 ## changes
 
 ### AST & IR
