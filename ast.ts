@@ -6,6 +6,7 @@ export type Type =
   | {tag: "bool"}
   | {tag: "none"}
   | {tag: "class", name: string}
+  | {tag: "func"; args: Type[]; ret: Type }
   | {tag: "either", left: Type, right: Type }
 
 export type SourceLocation = { line: number }
@@ -29,6 +30,9 @@ export type Stmt<A> =
   | {  a?: A, tag: "index-assign", obj: Expr<A>, index: Expr<A>, value: Expr<A> }
   | {  a?: A, tag: "if", cond: Expr<A>, thn: Array<Stmt<A>>, els: Array<Stmt<A>> }
   | {  a?: A, tag: "while", cond: Expr<A>, body: Array<Stmt<A>> }
+  | {  a?: A, tag: "closure", func: FunDef<A> }
+  | {  a?: A, tag: "nonlocal", vars: string[] }
+  | {  a?: A, tag: "global", vars: string[] }
 
 export type Expr<A> =
     {  a?: A, tag: "literal", value: Literal }
@@ -42,6 +46,7 @@ export type Expr<A> =
   | {  a?: A, tag: "index", obj: Expr<A>, index: Expr<A> }
   | {  a?: A, tag: "method-call", obj: Expr<A>, method: string, arguments: Array<Expr<A>> }
   | {  a?: A, tag: "construct", name: string }
+  | {  a?: A, tag: "lambda", args: string[], body: Expr<A> }
 
 export type Literal = 
     { tag: "num", value: number }
@@ -56,3 +61,22 @@ export enum UniOp { Neg, Not };
 export type Value =
     Literal
   | { tag: "object", name: string, address: number}
+
+/// checks if t1 is a subtype of t2 (t1 is assignable to t2)
+export function subType(t1: Type, t2: Type): boolean {
+  if (t1.tag === t2.tag) {
+    if (t1.tag === "func" && t2.tag === "func") {
+      return (
+        t1.args.length === t2.args.length &&
+        subType(t1.ret, t2.ret) &&
+        t1.args.every((_, i) => subType(t2.args[i], t1.args[i]))
+      );
+    } else if (t1.tag === "class" && t2.tag === "class") {
+      return t1.name === t2.name;
+    } else {
+      return true;
+    }
+  } else {
+    return t1.tag === "none" && (t2.tag === "class" || t2.tag === "func");
+  }
+}
