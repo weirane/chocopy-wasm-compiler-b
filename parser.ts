@@ -266,32 +266,10 @@ export function traverseStmt(c : TreeCursor, s : string) : Stmt<SourceLocation> 
       const expr = traverseExpr(c, s);
       c.parent(); // pop going into stmt
       return { a: location, tag: "expr", expr: expr }
-    // case "FunctionDefinition":
-    //   c.firstChild();  // Focus on def
-    //   c.nextSibling(); // Focus on name of function
-    //   var name = s.substring(c.from, c.to);
-    //   c.nextSibling(); // Focus on ParamList
-    //   var parameters = traverseParameters(c, s)
-    //   c.nextSibling(); // Focus on Body or TypeDef
-    //   let ret : Type = NONE;
-    //   if(c.type.name === "TypeDef") {
-    //     c.firstChild();
-    //     ret = traverseType(c, s);
-    //     c.parent();
-    //   }
-    //   c.firstChild();  // Focus on :
-    //   var body = [];
-    //   while(c.nextSibling()) {
-    //     body.push(traverseStmt(c, s));
-    //   }
-      // console.log("Before pop to body: ", c.type.name);
-    //   c.parent();      // Pop to Body
-      // console.log("Before pop to def: ", c.type.name);
-    //   c.parent();      // Pop to FunctionDefinition
-    //   return {
-    //     tag: "fun",
-    //     name, parameters, body, ret
-    //   }
+    case "FunctionDefinition": {
+      const func = traverseFunDef(c, s);
+      return { tag: "closure", func };
+    }
     case "IfStatement":
       c.firstChild(); // Focus on if
       c.nextSibling(); // Focus on cond
@@ -354,7 +332,37 @@ export function traverseType(c : TreeCursor, s : string) : Type {
   switch(name) {
     case "int": return NUM;
     case "bool": return BOOL;
-    default: return CLASS(name);
+    case "None": return NONE;
+    default: {
+      if (c.name === "MemberExpression") {
+        c.firstChild();
+        const varname = s.substring(c.from, c.to);
+        if (varname === "Callable") {
+          c.nextSibling(); // Focus on [
+          c.nextSibling(); // Focus on ArrayExpression
+          c.firstChild();
+          c.nextSibling(); // skip the [
+          const args = [];
+          while (c.type.name !== "]") {
+            const typ = traverseType(c, s);
+            args.push(typ);
+            c.nextSibling();
+            c.nextSibling();
+          }
+          c.parent();
+          c.nextSibling();
+          c.nextSibling(); // skip the ,
+          const ret = traverseType(c, s);
+          c.parent();
+          return { tag: "func", args, ret };
+        } else {
+          // other generics stuff
+          c.parent();
+          throw new Error("unimplemented");
+        }
+      }
+      return CLASS(name);
+    }
   }
 }
 
