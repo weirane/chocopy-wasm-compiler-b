@@ -61,22 +61,3 @@ export enum UniOp { Neg, Not };
 export type Value =
     Literal
   | { tag: "object", name: string, address: number}
-
-/// checks if t1 is a subtype of t2 (t1 is assignable to t2)
-export function subType(t1: Type, t2: Type): boolean {
-  if (t1.tag === t2.tag) {
-    if (t1.tag === "func" && t2.tag === "func") {
-      return (
-        t1.args.length === t2.args.length &&
-        subType(t1.ret, t2.ret) &&
-        t1.args.every((_, i) => subType(t2.args[i], t1.args[i]))
-      );
-    } else if (t1.tag === "class" && t2.tag === "class") {
-      return t1.name === t2.name;
-    } else {
-      return true;
-    }
-  } else {
-    return t1.tag === "none" && (t2.tag === "class" || t2.tag === "func");
-  }
-}

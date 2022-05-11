@@ -64,7 +64,16 @@ export function isNoneOrClass(t: Type) {
 }
 
 export function isSubtype(env: GlobalTypeEnv, t1: Type, t2: Type): boolean {
-  return equalType(t1, t2) || t1.tag === "none" && t2.tag === "class" 
+  if (t1.tag === "func" && t2.tag === "func") {
+    // subtying rule for function: arguments are contravariant, return type is covariant
+    return (
+      t1.args.length === t2.args.length &&
+        isAssignable(env, t1.ret, t2.ret) &&
+        t1.args.every((_, i) => isAssignable(env, t2.args[i], t1.args[i]))
+    );
+  } else {
+    return equalType(t1, t2) || t1.tag === "none" && (t2.tag === "class" || t2.tag === "func");
+  }
 }
 
 export function isAssignable(env : GlobalTypeEnv, t1 : Type, t2 : Type) : boolean {
