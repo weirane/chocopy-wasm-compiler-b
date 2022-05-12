@@ -72,6 +72,15 @@ export function isSubtype(env: GlobalTypeEnv, t1: Type, t2: Type): boolean {
         isAssignable(env, t1.ret, t2.ret) &&
         t1.args.every((_, i) => isAssignable(env, t2.args[i], t1.args[i]))
     );
+  } else if (t1.tag === "class" && t2.tag === "func") {
+    // allow assigning callable classes to func
+    const methods = env.classes.get(t1.name)[1];
+    if (!methods.has("__call__")) {
+      // not a callable class
+      return false;
+    }
+    const [callarg, callret] = methods.get("__call__");
+    return isAssignable(env, { tag:"func", args: callarg.slice(1), ret: callret }, t2);
   } else {
     return equalType(t1, t2) || t1.tag === "none" && (t2.tag === "class" || t2.tag === "func");
   }
