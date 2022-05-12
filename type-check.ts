@@ -4,6 +4,7 @@ import { Stmt, Expr, Type, UniOp, BinOp, Literal, Program, FunDef, VarInit, Clas
 import { NUM, BOOL, NONE, CLASS } from './utils';
 import { emptyEnv } from './compiler';
 import { TypeCheckError } from './error_reporting'
+import { translateClosuresToClasses } from './closure'
 
 export type GlobalTypeEnv = {
   globals: Map<string, Type>,
@@ -101,6 +102,7 @@ export function augmentTEnv(env : GlobalTypeEnv, program : Program<SourceLocatio
 }
 
 export function tc(env : GlobalTypeEnv, program : Program<SourceLocation>) : [Program<[Type, SourceLocation]>, GlobalTypeEnv] {
+  program = translateClosuresToClasses(program);
   const locals = emptyLocalTypeEnv();
   const newEnv = augmentTEnv(env, program);
   const tInits = program.inits.map(init => tcInit(env, init));

@@ -167,6 +167,9 @@ def getAdder(a:int) -> Callable[[int], int]:
     def adder(b: int) -> int:
         return a + b
     return adder
+f: Callable[[int], int] = None
+f = getAdder(1)
+f(2)
 ```
 
 Our `parser.ts` shall produce an AST with one function that returns a closure.
@@ -186,6 +189,14 @@ def getAdder(a:int) -> Callable[[int], int]:
     adder = Closure1()
     adder.a = a
     return adder
+
+# f: Closure1 = None
+# f = getAdder(1)
+# f.__call__(2)
+
+f: Callable[[int], int] = None
+f = getAdder(1)
+f(2)  # lower
 ```
 
 Hence, the value representation of a closure at runtime is the address of the
