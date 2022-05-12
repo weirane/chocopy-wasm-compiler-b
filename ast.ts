@@ -19,7 +19,7 @@ export type Class<A> = { a?: A, name: string, fields: Array<VarInit<A>>, methods
 
 export type VarInit<A> = { a?: A, name: string, type: Type, value: Literal }
 
-export type FunDef<A> = { a?: A, name: string, parameters: Array<Parameter<A>>, ret: Type, inits: Array<VarInit<A>>, body: Array<Stmt<A>> }
+export type FunDef<A> = { a?: A, envRead?: Set<string>, envWrite?: Set<string>, name: string, parameters: Array<Parameter<A>>, ret: Type, inits: Array<VarInit<A>>, body: Array<Stmt<A>> }
 
 export type Stmt<A> =
   | {  a?: A, tag: "assign", name: string, value: Expr<A> }

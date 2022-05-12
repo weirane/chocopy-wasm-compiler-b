@@ -229,6 +229,122 @@ export function tcStmt(env : GlobalTypeEnv, locals : LocalTypeEnv, stmt : Stmt<S
       if (!isAssignable(env, tVal.a[0], fields.get(stmt.field)))
         throw new TypeCheckError(`could not assign value of type: ${tVal.a}; field ${stmt.field} expected type: ${fields.get(stmt.field)}`);
       return {...stmt, a: [NONE, stmt.a], obj: tObj, value: tVal};
+    case "closure": {
+      const func = stmt.func;
+      // escape analysis
+      func.envRead = new Set();
+      const envRead: Set<string> = new Set();
+      const envWrite: Set<string> = new Set();
+      for (const s of func.body) {
+        getStmtRW(s, envRead, envWrite);
+      }
+      for (const p of func.parameters) {
+        envRead.delete(p.name);
+      }
+      for (const s of func.inits) {
+        envRead.delete(s.name);
+      }
+      for (const s of envRead) {
+        if (locals.vars.has(s)) {
+          func.envRead.add(s);
+        } else {
+          if (!env.globals.has(s)) {
+            throw new TypeCheckError(`unknown variable ${s}`);
+          }
+        }
+      }
+      console.log(func.envRead);
+      // TODO: func.envWrite
+      // TODO: tc body
+      // TODO: annotate
+      return {...stmt, a: [NONE, stmt.a], func: {...func, a: [NONE, func.a]}} as any;
+    }
+  }
+}
+
+function getExprRW(expr: Expr<SourceLocation>, reads: Set<string>, writes: Set<string>) {
+  switch(expr.tag) {
+    case "literal":
+      return;
+    case "id":
+      reads.add(expr.name);
+      return;
+    case "binop": {
+      getExprRW(expr.left, reads, writes);
+      getExprRW(expr.right, reads, writes);
+      return;
+    }
+    case "uniop":
+      getExprRW(expr.expr, reads, writes);
+      return;
+    case "builtin1":
+      getExprRW(expr.arg, reads, writes);
+      return;
+    case "builtin2":
+      getExprRW(expr.left, reads, writes);
+      getExprRW(expr.right, reads, writes);
+      return;
+    case "call":
+      // TODO: add expr.name
+      for (const arg of expr.arguments) {
+        getExprRW(arg, reads, writes);
+      }
+      return;
+    case "lookup":
+      getExprRW(expr.obj, reads, writes);
+      return;
+    case "method-call":
+      getExprRW(expr.obj, reads, writes);
+      for (const arg of expr.arguments) {
+        getExprRW(arg, reads, writes);
+      }
+      return;
+    case "construct":
+      // TODO
+      return;
+    case "lambda":
+      throw new Error("lambda not implemented");
+  }
+}
+
+export function getStmtRW(stmt: Stmt<SourceLocation>, reads: Set<string>, writes: Set<string>) {
+  switch(stmt.tag) {
+    case "assign":
+      writes.add(stmt.name);
+      getExprRW(stmt.value, reads, writes);
+      return;
+    case "return":
+      getExprRW(stmt.value, reads, writes);
+      return;
+    case "expr":
+      getExprRW(stmt.expr, reads, writes);
+      return;
+    case "field-assign":
+      getExprRW(stmt.obj, reads, writes);
+      getExprRW(stmt.value, reads, writes);
+      return;
+    case "if":
+      getExprRW(stmt.cond, reads, writes);
+      for (const s of stmt.thn) {
+        getStmtRW(s, reads, writes);
+      }
+      for (const s of stmt.els) {
+        getStmtRW(s, reads, writes);
+      }
+      return;
+    case "while":
+      getExprRW(stmt.cond, reads, writes);
+      for (const s of stmt.body) {
+        getStmtRW(s, reads, writes);
+      }
+      return;
+    case "closure":
+      // TODO: find free var
+      throw new Error("nested closure not implemented");
+    case "pass":
+    case "nonlocal":
+    case "global":
+      return;
   }
 }
 
