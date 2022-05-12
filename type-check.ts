@@ -264,7 +264,19 @@ export function tcStmt(env : GlobalTypeEnv, locals : LocalTypeEnv, stmt : Stmt<S
       console.log(func.envRead);
       // TODO: func.envWrite
 
+      // TODO change closureVar reads to self.
       func = tcDef(env, func, new Map(locals.vars))
+
+      // TODO
+      // generate a name C for the closure class
+      // generate a class C
+      //     field 1 with type
+      //     field 2 with type...
+      //     def __call__(...) -> ...:  the original function
+      // add func.name to localEnv
+      // func.name = C()       # create the closure instance
+      // func.field1 = field1
+      // func.field2 = field2
       return func as any
     }
   }
