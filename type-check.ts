@@ -13,6 +13,7 @@ export type GlobalTypeEnv = {
 
 export type LocalTypeEnv = {
   vars: Map<string, Type>,
+  closureVars: Map<string, Type>,
   expectedRet: Type,
   actualRet: Type,
   topLevel: Boolean
@@ -42,6 +43,7 @@ export function emptyGlobalTypeEnv() : GlobalTypeEnv {
 export function emptyLocalTypeEnv() : LocalTypeEnv {
   return {
     vars: new Map(),
+    closureVars: new Map(),
     expectedRet: NONE,
     actualRet: NONE,
     topLevel: true
@@ -104,7 +106,7 @@ export function tc(env : GlobalTypeEnv, program : Program<SourceLocation>) : [Pr
   const locals = emptyLocalTypeEnv();
   const newEnv = augmentTEnv(env, program);
   const tInits = program.inits.map(init => tcInit(env, init));
-  const tDefs = program.funs.map(fun => tcDef(newEnv, fun));
+  const tDefs = program.funs.map(fun => tcDef(newEnv, fun, new Map()));
   const tClasses = program.classes.map(cls => tcClass(newEnv, cls));
 
   // program.inits.forEach(init => env.globals.set(init.name, tcInit(init)));
@@ -135,10 +137,11 @@ export function tcInit(env: GlobalTypeEnv, init : VarInit<SourceLocation>) : Var
   }
 }
 
-export function tcDef(env : GlobalTypeEnv, fun : FunDef<SourceLocation>) : FunDef<[Type, SourceLocation]> {
+export function tcDef(env : GlobalTypeEnv, fun : FunDef<SourceLocation>, closureVars : Map<string, Type>) : FunDef<[Type, SourceLocation]> {
   var locals = emptyLocalTypeEnv();
   locals.expectedRet = fun.ret;
   locals.topLevel = false;
+  locals.closureVars = closureVars;
   fun.parameters.forEach(p => locals.vars.set(p.name, p.type));
   var tcinits: VarInit<[Type, SourceLocation]>[] = [];
   fun.inits.forEach(init => {
@@ -155,7 +158,7 @@ export function tcDef(env : GlobalTypeEnv, fun : FunDef<SourceLocation>) : FunDe
 
 export function tcClass(env: GlobalTypeEnv, cls : Class<SourceLocation>) : Class<[Type, SourceLocation]> {
   const tFields = cls.fields.map(field => tcInit(env, field));
-  const tMethods = cls.methods.map(method => tcDef(env, method));
+  const tMethods = cls.methods.map(method => tcDef(env, method, new Map()));
   const init = cls.methods.find(method => method.name === "__init__") // we'll always find __init__
   if (init.parameters.length !== 1 || 
     init.parameters[0].name !== "self" ||
@@ -230,8 +233,13 @@ export function tcStmt(env : GlobalTypeEnv, locals : LocalTypeEnv, stmt : Stmt<S
         throw new TypeCheckError(`could not assign value of type: ${tVal.a}; field ${stmt.field} expected type: ${fields.get(stmt.field)}`);
       return {...stmt, a: [NONE, stmt.a], obj: tObj, value: tVal};
     case "closure": {
-      const func = stmt.func;
+      // global variable
+      // def f
+      //     def g <-- closure
+      let func: FunDef<any> = stmt.func;
+
       // escape analysis
+      // variables in envRead become fields in the closure-turned set
       func.envRead = new Set();
       const envRead: Set<string> = new Set();
       const envWrite: Set<string> = new Set();
@@ -255,9 +263,9 @@ export function tcStmt(env : GlobalTypeEnv, locals : LocalTypeEnv, stmt : Stmt<S
       }
       console.log(func.envRead);
       // TODO: func.envWrite
-      // TODO: tc body
-      // TODO: annotate
-      return {...stmt, a: [NONE, stmt.a], func: {...func, a: [NONE, func.a]}} as any;
+
+      func = tcDef(env, func, new Map(locals.vars))
+      return func as any
     }
   }
 }
@@ -400,6 +408,8 @@ export function tcExpr(env : GlobalTypeEnv, locals : LocalTypeEnv, expr : Expr<S
         return {...expr, a: [locals.vars.get(expr.name), expr.a]};
       } else if (env.globals.has(expr.name)) {
         return {...expr, a: [env.globals.get(expr.name), expr.a]};
+      } else if (locals.closureVars.has(expr.name)) {
+        return {...expr, a: [locals.closureVars.get(expr.name), expr.a]};
       } else {
         throw new TypeCheckError("Unbound id: " + expr.name);
       }
