@@ -67,12 +67,14 @@ function translateClosuresInFunc(f: FunDef<SourceLocation>, program: Program<Sou
       console.log(closureVars)
 
       // generate a class C
+      // TODO C is a subclass of Callable...
       //     field 1 with type
       //     field 2 with type...
       //     def __call__(...) -> ...:  the original function
       const gFields: VarInit<SourceLocation>[] = []
       for (const [v, t] of closureVars.entries()) {
         const field = {
+          a: g.a,
           name: v,
           type: t,
           value: defaultLiteral(t)
@@ -81,21 +83,32 @@ function translateClosuresInFunc(f: FunDef<SourceLocation>, program: Program<Sou
       }
       translateClosureReadsToLookup(g.body, closureVars);
       const callMethod = {
+        a: g.a,
         name: "__call__",
         parameters: [{name: "self", type: CLASS(gClassName)}, ...g.parameters],
         ret: g.ret,
         inits: g.inits,
         body: g.body,
       };
+      const initMethod = {
+        a: g.a,
+        name: "__init__",
+        parameters: [{name: "self", type: CLASS(gClassName)}],
+        ret: NONE,
+        inits: [] as any,
+        body: [] as any
+      };
       const gClass: Class<SourceLocation> = {
+        a: g.a,
         name: gClassName,
         fields: gFields,
-        methods: [callMethod]
+        methods: [callMethod, initMethod]
       }
       program.classes.push(gClass)
 
       // add funcname to localEnv
       f.inits.push({
+        a: g.a,
         name: g.name,
         type: CLASS(gClassName),
         value: {tag: "none"}
@@ -103,6 +116,7 @@ function translateClosuresInFunc(f: FunDef<SourceLocation>, program: Program<Sou
 
       // funcname = C()       # create the closure instance
       body.push({
+        a: g.a,
         tag: "assign",
         name: g.name,
         value: {
@@ -117,13 +131,16 @@ function translateClosuresInFunc(f: FunDef<SourceLocation>, program: Program<Sou
       // ...
       for (const v of closureVars.keys()) {
         body.push({
+          a: g.a,
           tag: "field-assign",
           obj: {
+            a: g.a,
             tag: "id",
             name: g.name,
           },
           field: v,
           value: {   // TODO might be self.v for nested closures
+            a: g.a,
             tag: "id",
             name: v
           }

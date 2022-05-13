@@ -275,7 +275,8 @@ export function tcExpr(env : GlobalTypeEnv, locals : LocalTypeEnv, expr : Expr<S
           if(equalType(tLeft.a[0], BOOL) && equalType(tRight.a[0], BOOL)) { return {...tBin, a: [BOOL, expr.a]} ; }
           else { throw new TypeCheckError("Type mismatch for boolean op" + expr.op); }
         case BinOp.Is:
-          if(!isNoneOrClass(tLeft.a[0]) || !isNoneOrClass(tRight.a[0]))
+          if(   !(isNoneOrClass(tLeft.a[0])  || tLeft.a[0].tag === "func") 
+             || !(isNoneOrClass(tRight.a[0]) || tRight.a[0].tag === "func" ))
             throw new TypeCheckError("is operands must be objects");
           return {...tBin, a: [BOOL, expr.a]};
       }
@@ -352,6 +353,23 @@ export function tcExpr(env : GlobalTypeEnv, locals : LocalTypeEnv, expr : Expr<S
            } else {
             throw new TypeError("Function call type mismatch: " + expr.name);
            }
+      } else if(env.globals.has(expr.name)) { 
+        const t = env.globals.get(expr.name)
+        if (t.tag !== "func") {
+          throw new TypeCheckError(`${expr.name} is not callable`);
+        }
+        console.log(`calling a closure ${expr.name}`)
+        return {
+          a: [t.ret, expr.a],
+          tag: "method-call",
+          obj: {
+            a: [t, expr.a],
+            tag: "id",
+            name: expr.name
+          },
+          method: "__call__",
+          arguments: expr.arguments.map(arg => tcExpr(env, locals, arg))
+        }
       } else {
         throw new TypeError("Undefined function: " + expr.name);
       }
