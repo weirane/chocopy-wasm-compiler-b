@@ -1,4 +1,3 @@
-
 import { Stmt, Expr, Type, UniOp, BinOp, Literal, Program, FunDef, VarInit, Class, SourceLocation } from './ast';
 import { TypeCheckError } from './error_reporting'
 import { NUM, BOOL, NONE, CLASS } from './utils';
@@ -81,7 +80,7 @@ function translateClosuresInFunc(f: FunDef<SourceLocation>, program: Program<Sou
         };
         gFields.push(field)
       }
-      translateClosureReadsToLookup(g.body, closureVars);
+      closureReadsToSelf(g.body, closureVars);
       const callMethod = {
         a: g.a,
         name: "__call__",
@@ -154,30 +153,30 @@ function translateClosuresInFunc(f: FunDef<SourceLocation>, program: Program<Sou
 }
 
 // modify in place
-function translateClosureReadsToLookup(stmts: Stmt<SourceLocation>[], closureVars: Map<string, Type>) {
+function closureReadsToSelf(stmts: Stmt<SourceLocation>[], closureVars: Map<string, Type>) {
   for (const stmt of stmts) {
     switch(stmt.tag) {
       case "assign":
-        stmt.value = translateClosureReadsToLookupInExpr(stmt.value, closureVars)
+        stmt.value = closureReadsToSelfInExpr(stmt.value, closureVars)
         return;
       case "return":
-        stmt.value = translateClosureReadsToLookupInExpr(stmt.value, closureVars)
+        stmt.value = closureReadsToSelfInExpr(stmt.value, closureVars)
         return;
       case "expr":
-        stmt.expr = translateClosureReadsToLookupInExpr(stmt.expr, closureVars)
+        stmt.expr = closureReadsToSelfInExpr(stmt.expr, closureVars)
         return;
       case "field-assign":
-        stmt.obj = translateClosureReadsToLookupInExpr(stmt.obj, closureVars)
-        stmt.value = translateClosureReadsToLookupInExpr(stmt.value, closureVars)
+        stmt.obj = closureReadsToSelfInExpr(stmt.obj, closureVars)
+        stmt.value = closureReadsToSelfInExpr(stmt.value, closureVars)
         return;
       case "if":
-        stmt.cond = translateClosureReadsToLookupInExpr(stmt.cond, closureVars)
-        translateClosureReadsToLookup(stmt.thn, closureVars)
-        translateClosureReadsToLookup(stmt.els, closureVars)
+        stmt.cond = closureReadsToSelfInExpr(stmt.cond, closureVars)
+        closureReadsToSelf(stmt.thn, closureVars)
+        closureReadsToSelf(stmt.els, closureVars)
         return;
       case "while":
-        stmt.cond = translateClosureReadsToLookupInExpr(stmt.cond, closureVars)
-        translateClosureReadsToLookup(stmt.body, closureVars)
+        stmt.cond = closureReadsToSelfInExpr(stmt.cond, closureVars)
+        closureReadsToSelf(stmt.body, closureVars)
         return;
       case "closure":
         throw new Error("nested closure not implemented"); //TODO
@@ -190,7 +189,7 @@ function translateClosureReadsToLookup(stmts: Stmt<SourceLocation>[], closureVar
 }
 
 // return a new one
-function translateClosureReadsToLookupInExpr(expr: Expr<SourceLocation>, closureVars: Map<string, Type>): Expr<SourceLocation> {
+function closureReadsToSelfInExpr(expr: Expr<SourceLocation>, closureVars: Map<string, Type>): Expr<SourceLocation> {
   switch(expr.tag) {
     case "literal":
       return expr;
@@ -209,46 +208,46 @@ function translateClosureReadsToLookupInExpr(expr: Expr<SourceLocation>, closure
       }
     case "binop": {
       return {
-        ...expr, 
-        left: translateClosureReadsToLookupInExpr(expr.left, closureVars), 
-        right: translateClosureReadsToLookupInExpr(expr.right, closureVars)
+        ...expr,
+        left: closureReadsToSelfInExpr(expr.left, closureVars),
+        right: closureReadsToSelfInExpr(expr.right, closureVars)
       };
     }
     case "uniop":
       return {
-        ...expr, 
-        expr: translateClosureReadsToLookupInExpr(expr.expr, closureVars), 
+        ...expr,
+        expr: closureReadsToSelfInExpr(expr.expr, closureVars),
       };
     case "builtin1":
       return {
-        ...expr, 
-        arg: translateClosureReadsToLookupInExpr(expr.arg, closureVars), 
+        ...expr,
+        arg: closureReadsToSelfInExpr(expr.arg, closureVars),
       };
     case "builtin2":
       return {
-        ...expr, 
-        left: translateClosureReadsToLookupInExpr(expr.left, closureVars), 
-        right: translateClosureReadsToLookupInExpr(expr.right, closureVars)
+        ...expr,
+        left: closureReadsToSelfInExpr(expr.left, closureVars),
+        right: closureReadsToSelfInExpr(expr.right, closureVars)
       };
     case "call":
       // TODO: expr.name
       return {
         ...expr,
-        arguments: expr.arguments.map(arg => translateClosureReadsToLookupInExpr(arg, closureVars))
+        arguments: expr.arguments.map(arg => closureReadsToSelfInExpr(arg, closureVars))
       }
     case "lookup":
       return {
         ...expr,
-        obj: translateClosureReadsToLookupInExpr(expr.obj, closureVars),
+        obj: closureReadsToSelfInExpr(expr.obj, closureVars),
       }
     case "method-call":
       return {
         ...expr,
-        obj: translateClosureReadsToLookupInExpr(expr.obj, closureVars),
-        arguments: expr.arguments.map(arg => translateClosureReadsToLookupInExpr(arg, closureVars))
+        obj: closureReadsToSelfInExpr(expr.obj, closureVars),
+        arguments: expr.arguments.map(arg => closureReadsToSelfInExpr(arg, closureVars))
       }
     case "construct":
-      throw new Error("unreachable");
+      throw new Error("unreachable: construct");
     case "lambda":
       throw new Error("lambda not implemented");
   }
@@ -296,7 +295,7 @@ function getExprRW(expr: Expr<SourceLocation>, reads: Set<string>) {
       }
       return;
     case "construct":
-      throw new Error("unreachable");
+      throw new Error("unreachable: construct");
     case "lambda":
       throw new Error("lambda not implemented");
   }
