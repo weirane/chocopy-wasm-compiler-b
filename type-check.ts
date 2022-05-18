@@ -358,7 +358,6 @@ export function tcExpr(env : GlobalTypeEnv, locals : LocalTypeEnv, expr : Expr<S
         if (t.tag !== "func") {
           throw new TypeCheckError(`${expr.name} is not callable`);
         }
-        console.log(`calling a closure ${expr.name}`)
         return {
           a: [t.ret, expr.a],
           tag: "method-call",
