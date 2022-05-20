@@ -22,7 +22,6 @@ function translateClosuresInFunc(f: FunDef<SourceLocation>, program: Program<Sou
       //     def g <-- closure
       const g = stmt.func
 
-      // TODO
       // generate a name C for the closure class
       const gClassName = genClosureClassName(g.name)
 
