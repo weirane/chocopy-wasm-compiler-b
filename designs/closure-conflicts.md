@@ -240,6 +240,8 @@ f = getAdder(1)
 a = [f]
 ```
 
+This will intialize a list of callable object
+
 ## Memory management
 
 In their implementation, they customized alloc in the lower.ts when
@@ -261,6 +263,8 @@ f = getAdder(1)
 test_refcount(f, 1)
 ```
 
+Since f is referenced once, test refcount should return true. 
+
 ## Optmization
 
 There is no overlap between our design a and the optimization. We
@@ -280,6 +284,8 @@ def getAdder(a:int) -> Callable[[int], int]:
 f: Callable[[int], int] = None
 f = getAdder(1)
 f(2)
+
+The closure will be optimized by removing the print function after the return statement
 
 # before optimization
 def getAdder(a:int) -> Callable[[int], int]:
@@ -303,13 +309,16 @@ def getAdder(a:int) -> Callable[[int], int]:
         return a + b
     return adder
 f: Callable[[int], int] = None
-set_1 : set[int] = None
+set_1 : set[Callable[[int], int]] = None
 f = getAdder(1)
 set_1 = {f}
 set_1.remove(f)
 ```
 
-Strings: The string in the compilerB is designed as a class type. Each variable that
+This piece of code will initilize a set of callable. We can add callable object to this set and remove from it.
+
+## Strings
+The string in the compilerB is designed as a class type. Each variable that
 stores a string bascically holds a pointer to that string object in the heap. In their
 AST design, they only extended the data type string. There is no conflict between
 our groups because there is no overlap between closure and string implmentation. The closure body will just treat string as a new data type.
