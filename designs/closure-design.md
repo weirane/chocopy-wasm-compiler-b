@@ -157,4 +157,13 @@ f = getAdder(1)
 f(2) 
 ```
 
+## Work left to do from week8 - week10
 
+1. generate and use `new()` to pass fields into the closure instead of using `fieldassign` statements
+2. make our closures runnable by making closure-turned-classses inherit the callable interface (which will have a stub call method). We need to do this after inheritance code is merged. This should complete type-checking too.
+3. implement multi-level escape analysis and nested closure.
+4. make top level functions first class citizens. in AST, replace the `name` in the `call` expression with `expr` so that `f()()` is supported.
+5. lambda
+6. nonlocal
+
+We plan to have a set of test cases for every step.
