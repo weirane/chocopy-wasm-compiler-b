@@ -219,3 +219,111 @@ class Link(List):
         self.next = next
         return self
 ```
+
+
+## List
+the implementation of this feature basically extends the ast with 'list' data
+type. list type holds an address that points to certain memory in the heap. Each element of that list is stored as consecutive 4-byte blocks. There is
+no conflict between our implmentations because each closure is considered as a class. If we initialize a list of closures, we need to add the address of that closure to
+the list. Since we didn't modify the IR part, there is no IR conflict between our design and list design.
+
+Example:
+
+```python
+def getAdder(a:int) -> Callable[[int], int]:
+    def adder(b: int) -> int:
+        return a + b
+    return adder
+f: Callable[[int], int] = None
+a: [Callable[[int], int]] = None
+f = getAdder(1)
+a = [f]
+```
+
+## Memory management
+
+In their implementation, they customized alloc in the lower.ts when
+initializing a new object and dynamically checks the reference count of each object.
+Our project already converted the closure into classes and each instance of closure
+is the same as the regular object. Since our changes are done in AST/TC part while
+memory mangagement are processed in IR/Lower part, there is no conflict between our
+implmentations.
+
+Example:
+
+```python
+def getAdder(a:int) -> Callable[[int], int]:
+    def adder(b: int) -> int:
+        return a + b
+    return adder
+f: Callable[[int], int] = None
+f = getAdder(1)
+test_refcount(f, 1)
+```
+
+## Optmization
+
+There is no overlap between our design a and the optimization. We
+preprocessed all the closures/callable before the type checker and converted all the
+closures into classes while optimization is done mainly in the type checking and
+lower stages. Thus, optimizing closure is the same as optimizing class.
+
+Example:
+
+```python
+# before optimization
+def getAdder(a:int) -> Callable[[int], int]:
+    def adder(b: int) -> int:
+        return a + b
+        print(a + 5)
+    return adder
+f: Callable[[int], int] = None
+f = getAdder(1)
+f(2)
+
+# before optimization
+def getAdder(a:int) -> Callable[[int], int]:
+    def adder(b: int) -> int:
+        return a + b
+    return adder
+f: Callable[[int], int] = None
+f = getAdder(1)
+f(2)
+```
+
+## Sets and/or tuples and/or dictionaries
+This group implemented set by calculating the hash of each variable/literal. Similar to the list, our closure is considered as class. Each callable
+object is referenced to its address in the heap. The hash of closure will be treated the same as the hash of class/object.
+
+Example:
+
+```python
+def getAdder(a:int) -> Callable[[int], int]:
+    def adder(b: int) -> int:
+        return a + b
+    return adder
+f: Callable[[int], int] = None
+set_1 : set[int] = None
+f = getAdder(1)
+set_1 = {f}
+set_1.remove(f)
+```
+
+Strings: The string in the compilerB is designed as a class type. Each variable that
+stores a string bascically holds a pointer to that string object in the heap. In their
+AST design, they only extended the data type string. There is no conflict between
+our groups because there is no overlap between closure and string implmentation. The closure body will just treat string as a new data type.
+
+Example:
+
+```python
+def getStr(a:int) -> Callable[[int], int]:
+    def adder(b: str) -> str:
+        return a + b
+    return adder
+f: Callable[[str], int] = None
+f = getAdder("some string ")
+print(f("other string"))
+```
+
+The result should be 'some string other string'
