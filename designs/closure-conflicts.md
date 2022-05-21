@@ -128,3 +128,94 @@ def f(a:int):
 ```
 
 The generated `__call__` function will retain the source location of the original nested function, so the error inside can still be reported.
+
+## Fancy calling conventions
+
+We have conflict at the subtyping rules for functions, as we need to take
+default arguments into account. We may need to add the number of default
+arguments into the `func` variant of `Type` in `ast.ts` to facilitate the check.
+
+```python
+def f(a: int, b: int=0):
+    pass
+
+x: Callable[[int], None] = None
+# f should be assignable to x
+```
+
+## for loops/iterators
+
+Our groups don't interact much.
+
+```python
+def add(a: int) -> Callable[[int], int]:
+    i: int = 0
+    for i in range(5):
+        def g():
+            return i
+        a = a + g()
+    return a + g()
+```
+
+Since our closures are all translated to class definitions and initializations,
+there will not be more interactions.
+
+## Front-end user interface
+
+Our groups interact when we want to print functions. If we want to print the
+signature of the function, we will need to modify the `stringify` function in
+`outputrender.ts` to add a case statement for functions. It should be a
+straightforward change.
+
+```python
+def f(a: int) -> int:
+    return a
+
+print(f)  # maybe render something like "int -> int"
+```
+
+## Generics and polymorphism
+
+## I/O, files
+
+Our groups don't interact much.
+
+```python
+def h() -> Callable[[], File]:
+    def g() -> File:
+        return open(0)
+    return g
+```
+
+Since our closures are all translated to class definitions and initializations,
+the code will work just as files and classes will work together.
+
+## Inheritance
+
+We don't have much conflict with the inheritance group, but we depend on their
+feature because we generate a different class for each closure, but they all
+inherit from a `Callable` class so that they can be assigned to each other (if
+their function signatures match).
+
+As the inheritance group works on the relations of classes and our work just
+transforms closure statements to class definitions and initializations, there is
+no conflict between us.
+```python
+class List(object):
+    def sum(self : List) -> int:
+        return 1 // 0
+class Empty(List):
+    def sum(self : Empty) -> int:
+        return 0
+class Link(List):
+    val : int = 0
+    next : List = None
+    def sum(self : Link) -> int:
+        def g() -> int:  # <== closure
+            return self.next.sum()
+        return self.val + g()
+    def new(self : Link, val : int, next : List) -> Link:
+        self.val = val
+        self.next = next
+        return self
+```
