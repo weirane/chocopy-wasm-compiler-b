@@ -117,13 +117,12 @@ This will get translated into this:
 ```python
 class Closure1(Callable[[int], int]): # generated
   a:int = 0            # generated
-  def __call__(b:int): # the original nested function
+  def __call__(self: Closure1, b:int): # the original nested function
     return a+False     # body of the original nested function
 
 def f(a:int):
-  g: Closure1 = None # generated
-  g = Closure1()     # generated
-  g.a = a            # generated
+  g: Closure1 = None    # generated
+  g = Closure1().new(a) # generated
   return g
 ```
 
@@ -175,6 +174,52 @@ print(f)  # maybe render something like "int -> int"
 ```
 
 ## Generics and polymorphism
+
+There is no conflict between closures and generics. The generics group limits the generics at the class level, and uses a similar AST transfomer to remove generics annotations. We also have an AST transformer to turn closures into classes. 
+
+We can chain those AST transformers by running theirs first (removing generics for classes with generics annotations) and ours later (turning closures into classes).
+
+Take the example below:
+
+```python
+class A(Generic[T]):
+  def foo(a: T) -> Callable[[], T]:
+    def clo() -> T:
+      return a
+    return clo
+
+a: A[int] = None
+```
+
+First, running the generics transformer: 
+
+```python
+class A_int():
+  def foo(a: int) -> Callable[[], int]:
+    def clo() -> int:
+      return a
+    return clo
+
+a: A_int = None
+```
+
+Second, running the closure transformer:
+
+```python
+class Closure1(Callable[[], int]):
+  a:int = 0
+  def __call__(self: Closure1):
+    return self.a
+
+class A_int():
+  def foo(a: int) -> Callable[[], int]:
+    clo: Closure1 = None
+    clo = Closure1().new(a)
+    return clo
+
+a: A_int = None
+```
+
 
 ## I/O, files
 
