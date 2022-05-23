@@ -74,15 +74,15 @@ f: Callable[[int], int] = None
 f = getAdder(1) 
   `, NONE);
 
-  assertPrint("assign closure and call", `
-def getAdder(a:int) -> Callable[[int], int]:
-    def adder(b: int) -> int:
-        return a + b
-    return adder
-f: Callable[[int], int] = None
-f = getAdder(1) 
-print(f(2))
-  `, ["3"])
+//   assertPrint("assign closure and call", `
+// def getAdder(a:int) -> Callable[[int], int]:
+//     def adder(b: int) -> int:
+//         return a + b
+//     return adder
+// f: Callable[[int], int] = None
+// f = getAdder(1) 
+// print(f(2))
+//   `, ["3"])
 
 
   assertPrint("the returned closures are different objects", `
@@ -109,15 +109,15 @@ g = f
 print(f is g)
   `, ["True"])
 
-  assertPrint("lexical scoping", `
-def getAdder(a:int) -> Callable[[int], int]:
-    def adder(b: int) -> int:
-        return a + b
-    return adder
-a: int = 10
-f: Callable[[int], int] = None
-f = getAdder(1) 
-print(f(2))
-  `, ["3"])
+//   assertPrint("lexical scoping", `
+// def getAdder(a:int) -> Callable[[int], int]:
+//     def adder(b: int) -> int:
+//         return a + b
+//     return adder
+// a: int = 10
+// f: Callable[[int], int] = None
+// f = getAdder(1) 
+// print(f(2))
+//   `, ["3"])
 
 })
