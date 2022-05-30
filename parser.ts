@@ -753,6 +753,7 @@ export function traverseType(c : TreeCursor, s : string) : Type {
       }
       return CLASS(name);
     }
+    }
   }
 }
 
