@@ -4,7 +4,7 @@
     "noImplicitAny": true,
     "module": "commonjs",
     "target": "es2019",
-    "allowJs": false,
+    "allowJs": true,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,

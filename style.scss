@@ -1,0 +1,293 @@
+@import "codemirror/lib/codemirror.css";
+@import "codemirror/theme/blackboard.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html{
+    // background-color: rgb(248, 246, 221);
+    overflow: hidden;
+}
+
+.wathon-playground{
+    display: flex;
+    height: 100vh;
+    flex-direction: column;
+    padding-bottom: 1em;
+}
+
+.wathon-header{
+    list-style-type: none;
+    padding-top: 2em;
+    padding-bottom: 1.25em;
+    // padding: 1.25em 0;
+    overflow: hidden;
+}
+
+.left{
+    float: left;
+}
+
+.right{
+    float: right;
+}
+
+.label-title-left{
+    display: block;
+    color: black;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+.label-title-margin{
+    margin-right: 0.5em;
+}
+
+.left-button-margin{
+    margin-right: auto;
+}
+
+.left-button-shadow{
+    box-shadow: 0 2px 4px -2px rgb(0 0 0 / 40%), inset 0 1px 0 white;
+}
+
+.label-left-run{
+    display: block;
+    color: black;
+    text-align: center;
+    padding: 14px 16px;
+    text-transform: uppercase;
+    text-decoration: none;
+    background-color: rgb(91, 124, 180);
+    color: white;
+    border-right: 1px solid #5d7290;
+    margin-right: 0.5em;
+    cursor: pointer;
+}
+
+.config-symbol{
+    display: block;
+    fill: currentcolor;
+}
+
+.left-run-symbol{
+    display: block;
+    fill: currentColor;
+}
+
+.run-symbol-margin{
+    margin-left: 0.75em;
+}
+
+.label-left-run:hover{
+    background-color: #5d7290;
+}
+
+.label-left{
+    display: block;
+    color: black;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+    text-transform: uppercase;
+    background-color: white;
+    cursor: pointer;
+    border-right: 1px solid #dedede;
+}
+
+.label-left:hover{
+    background-color: rgb(222, 220, 220);
+}
+
+.wathon-content-wrapper{
+    // grid-template-columns: auto;
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+}
+
+.wathon-content-border{
+    border: 4px solid #bbb;
+    border-radius: 4px;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+}
+
+.dynamic-content-border{
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+}
+
+.absolute-content-border{
+    // float: left;
+    // position: absolute;
+    width: 40%;
+    // width: 83vh;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    background: #fff;
+    flex: 1 1 auto;
+    overflow: scroll;
+}
+
+.user-code {
+    width: 100%;
+    min-width: 0;
+    height: 80em;
+    min-height: 0;
+    resize: none;
+    overflow: scroll;
+    font-family: monospace;
+    border: none;
+}
+
+.dragbar{
+    width: 9px;
+    cursor: col-resize;
+    background-color: #ddd;
+    background-image: url(https://trinket.io/cache-prefix-89107359/img/resizex.png);
+    background-repeat: no-repeat;
+    background-position: center;
+    border-left: 1px solid #b4b4b4;
+    border-right: 1px solid #b4b4b4;
+    // float: left;
+    flex: 0 0 auto;
+}
+
+.interection-content-border{
+    // float: left;
+    // margin-left: 50%;
+    // position:relative;
+    // width: auto;
+    // min-width: 0;
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 auto;
+    box-sizing: border-box;
+    // overflow: auto;
+    // background: #fff;
+}
+
+.interactions {
+    width: 100%;
+    // margin-left: 1em;
+    // position:absolute;
+    padding: 1em;
+    height: 100%;
+    border: none;
+    overflow: scroll;
+    font-family: monospace;
+    line-height: 1.2em;
+    font-size: 1.2em;
+    min-height: 100%;
+}
+
+.output{
+    // margin-top: 1em;
+    // font-family: monospace;
+    // line-height: 1.2em;
+    // font-size: 1.2em;
+    // margin-right: 1.5em;
+    
+}
+
+.console-prompt{
+    color: #008AFF;
+    // font-family: monospace;
+    // line-height: 1.2em;
+    // font-size: 1.2em;
+}
+
+.repl-code {
+    text-align: left;
+    font-family: monospace;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: transparent;
+
+    -webkit-box-shadow: none;
+    -moz-box-shadow: none;
+    box-shadow: none;
+    caret-color: transparent;
+    resize: none;
+}
+
+.repl-code:focus{
+    text-align: left;
+    outline: none;
+    background: transparent;
+    border: none;
+    caret-color: transparent;
+
+    -webkit-box-shadow: none;
+    -moz-box-shadow: none;
+    box-shadow: none;
+
+    resize: none;
+}
+
+.prompt {
+    // vertical-align: middle;
+    // display: flex;
+
+}
+.output pre {
+    max-width: 100%;
+    line-break: anywhere;
+    margin: 0;
+    word-wrap: break-word;
+    white-space: break-spaces;
+}
+
+.prompt-cursor{
+    display: block;
+    background-color: rgb(102, 102, 102);
+    white-space: pre-wrap;
+}
+
+.prompt-text{
+    display: inline;
+    white-space: pre-wrap;
+}
+
+.arrow {
+    border: solid brown;
+    border-width: 0 3px 3px 0;
+    display: inline-block;
+    padding: 3px;
+    transform: rotate(-45deg);
+  }
+
+.panel {
+    width: 100%;
+    padding: 0 0 0 5%;
+    display: none;
+    background-color: LightCyan;
+    overflow: hidden;
+    font-family: monospace;
+}
+
+.CodeMirror {
+    /* Set height, width, borders, and global font properties here */
+    font-family: monospace;
+    width: 100%;
+    min-width: 0;
+    height: 85.4vh;
+    min-height:auto;
+    // height: 400px;
+    // padding:5px;
+    // margin:10px;
+    border-radius: 2%;
+  }

@@ -4,7 +4,7 @@
 // // let console.log = console.log;
 
 // export function printProgram<A>(p : Program<A>) {
-//   p.stmts.map(printStmt);  
+//   p.body.map(bs => bs.stmts.map(printStmt));  
 // }
 
 // function printStmt<A>(stmt : Stmt<A>) {
