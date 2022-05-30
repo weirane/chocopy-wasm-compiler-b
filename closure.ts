@@ -1,4 +1,3 @@
-
 import { Stmt, Expr, Type, UniOp, BinOp, Literal, Program, FunDef, VarInit, Class, SourceLocation } from './ast';
 import { TypeCheckError } from './error_reporting'
 import { NUM, BOOL, NONE, CLASS } from './utils';
@@ -111,7 +110,7 @@ function translateClosuresInFunc(f: FunDef<SourceLocation>, program: Program<Sou
         a: g.a,
         name: g.name,
         type: CLASS(gClassName),
-        value: {tag: "none"}
+        value: defaultLiteral(NONE),
       });
 
       // funcname = C()       # create the closure instance
@@ -120,6 +119,7 @@ function translateClosuresInFunc(f: FunDef<SourceLocation>, program: Program<Sou
         tag: "assign",
         name: g.name,
         value: {
+          a: g.a,
           tag: "call",
           name: gClassName,
           arguments: []
@@ -160,6 +160,9 @@ function translateClosureReadsToLookup(stmts: Stmt<SourceLocation>[], closureVar
       case "assign":
         stmt.value = translateClosureReadsToLookupInExpr(stmt.value, closureVars)
         return;
+      case "assign-destr":
+        stmt.rhs = translateClosureReadsToLookupInExpr(stmt.rhs, closureVars)
+        return;
       case "return":
         stmt.value = translateClosureReadsToLookupInExpr(stmt.value, closureVars)
         return;
@@ -168,6 +171,11 @@ function translateClosureReadsToLookup(stmts: Stmt<SourceLocation>[], closureVar
         return;
       case "field-assign":
         stmt.obj = translateClosureReadsToLookupInExpr(stmt.obj, closureVars)
+        stmt.value = translateClosureReadsToLookupInExpr(stmt.value, closureVars)
+        return;
+      case "index-assign":
+        stmt.obj = translateClosureReadsToLookupInExpr(stmt.obj, closureVars)
+        stmt.index = translateClosureReadsToLookupInExpr(stmt.index, closureVars)
         stmt.value = translateClosureReadsToLookupInExpr(stmt.value, closureVars)
         return;
       case "if":
@@ -179,11 +187,19 @@ function translateClosureReadsToLookup(stmts: Stmt<SourceLocation>[], closureVar
         stmt.cond = translateClosureReadsToLookupInExpr(stmt.cond, closureVars)
         translateClosureReadsToLookup(stmt.body, closureVars)
         return;
+      case "for":
+        stmt.iterable = translateClosureReadsToLookupInExpr(stmt.iterable, closureVars)
+        translateClosureReadsToLookup(stmt.body, closureVars)
+        if (stmt.elseBody)
+          translateClosureReadsToLookup(stmt.elseBody, closureVars)
+        return;
       case "closure":
         throw new Error("nested closure not implemented"); //TODO
       case "pass":
       case "nonlocal":
       case "global":
+      case "break":
+      case "continue":
         return;
     }
   }
@@ -197,8 +213,10 @@ function translateClosureReadsToLookupInExpr(expr: Expr<SourceLocation>, closure
     case "id":
       if (closureVars.has(expr.name)) {
         return {
+          a: expr.a,
           tag: "lookup",
           obj: {
+            a: expr.a,
             tag: "id",
             name: "self"
           },
@@ -219,17 +237,6 @@ function translateClosureReadsToLookupInExpr(expr: Expr<SourceLocation>, closure
         ...expr, 
         expr: translateClosureReadsToLookupInExpr(expr.expr, closureVars), 
       };
-    case "builtin1":
-      return {
-        ...expr, 
-        arg: translateClosureReadsToLookupInExpr(expr.arg, closureVars), 
-      };
-    case "builtin2":
-      return {
-        ...expr, 
-        left: translateClosureReadsToLookupInExpr(expr.left, closureVars), 
-        right: translateClosureReadsToLookupInExpr(expr.right, closureVars)
-      };
     case "call":
       // TODO: expr.name
       return {
@@ -241,6 +248,17 @@ function translateClosureReadsToLookupInExpr(expr: Expr<SourceLocation>, closure
         ...expr,
         obj: translateClosureReadsToLookupInExpr(expr.obj, closureVars),
       }
+    case "listliteral":
+      return {
+        ...expr,
+        elements: expr.elements.map(a => translateClosureReadsToLookupInExpr(a, closureVars)),
+      };
+    case "index":
+      return {
+        ...expr,
+        obj: translateClosureReadsToLookupInExpr(expr.obj, closureVars),
+        index: translateClosureReadsToLookupInExpr(expr.index, closureVars),
+      };
     case "method-call":
       return {
         ...expr,
@@ -251,6 +269,33 @@ function translateClosureReadsToLookupInExpr(expr: Expr<SourceLocation>, closure
       throw new Error("unreachable");
     case "lambda":
       throw new Error("lambda not implemented");
+    case "set":
+      return {
+        ...expr,
+        values: expr.values.map(a => translateClosureReadsToLookupInExpr(a, closureVars)),
+      };
+    case "comprehension":
+      return {
+        ...expr,
+        lhs: translateClosureReadsToLookupInExpr(expr.lhs, closureVars),
+        iterable: translateClosureReadsToLookupInExpr(expr.iterable, closureVars),
+        ifcond: expr.ifcond ? translateClosureReadsToLookupInExpr(expr.ifcond, closureVars) : expr.ifcond,
+      };
+    case "ternary":
+      return {
+        ...expr,
+        exprIfTrue: translateClosureReadsToLookupInExpr(expr.exprIfTrue, closureVars),
+        ifcond: translateClosureReadsToLookupInExpr(expr.ifcond, closureVars),
+        exprIfFalse: translateClosureReadsToLookupInExpr(expr.exprIfFalse, closureVars),
+      };
+    case "non-paren-vals":
+      return {
+        ...expr,
+        values: expr.values.map(a => translateClosureReadsToLookupInExpr(a, closureVars)),
+      };
+    default:
+      console.log(`skipped ${(expr as any).tag}`);
+      return expr;
   }
 }
 
@@ -273,13 +318,6 @@ function getExprRW(expr: Expr<SourceLocation>, reads: Set<string>) {
     case "uniop":
       getExprRW(expr.expr, reads);
       return;
-    case "builtin1":
-      getExprRW(expr.arg, reads);
-      return;
-    case "builtin2":
-      getExprRW(expr.left, reads);
-      getExprRW(expr.right, reads);
-      return;
     case "call":
       // TODO: add expr.name
       for (const arg of expr.arguments) {
@@ -288,6 +326,13 @@ function getExprRW(expr: Expr<SourceLocation>, reads: Set<string>) {
       return;
     case "lookup":
       getExprRW(expr.obj, reads);
+      return;
+    case "listliteral":
+      for (const e of expr.elements) getExprRW(e, reads);
+      return;
+    case "index":
+      getExprRW(expr.obj, reads);
+      getExprRW(expr.index, reads);
       return;
     case "method-call":
       getExprRW(expr.obj, reads);
@@ -299,6 +344,17 @@ function getExprRW(expr: Expr<SourceLocation>, reads: Set<string>) {
       throw new Error("unreachable");
     case "lambda":
       throw new Error("lambda not implemented");
+    case "set":
+      for (const e of expr.values) getExprRW(e, reads);
+      return;
+    case "comprehension":
+      getExprRW(expr.lhs, reads);
+      getExprRW(expr.iterable, reads);
+      if (expr.ifcond) getExprRW(expr.ifcond, reads);
+      return;
+    case "non-paren-vals":
+      for (const e of expr.values) getExprRW(e, reads);
+      return;
   }
 }
 
@@ -306,6 +362,9 @@ function getStmtRW(stmt: Stmt<SourceLocation>, reads: Set<string>) {
   switch(stmt.tag) {
     case "assign":
       getExprRW(stmt.value, reads);
+      return;
+    case "assign-destr":
+      getExprRW(stmt.rhs, reads);
       return;
     case "return":
       getExprRW(stmt.value, reads);
@@ -315,6 +374,11 @@ function getStmtRW(stmt: Stmt<SourceLocation>, reads: Set<string>) {
       return;
     case "field-assign":
       getExprRW(stmt.obj, reads);
+      getExprRW(stmt.value, reads);
+      return;
+    case "index-assign":
+      getExprRW(stmt.obj, reads);
+      getExprRW(stmt.index, reads);
       getExprRW(stmt.value, reads);
       return;
     case "if":
@@ -335,20 +399,28 @@ function getStmtRW(stmt: Stmt<SourceLocation>, reads: Set<string>) {
     case "closure":
       // TODO: find free var
       throw new Error("nested closure not implemented");
+    case "for":
+      getExprRW(stmt.iterable, reads);
+      for (const s of stmt.body) getStmtRW(s, reads);
+      if (stmt.elseBody) for (const s of stmt.elseBody) getStmtRW(s, reads);
+      return;
     case "pass":
     case "nonlocal":
     case "global":
+    case "break":
+    case "continue":
       return;
   }
 }
 
-function defaultLiteral(t: Type): Literal {
+function defaultLiteral(t: Type): Literal<SourceLocation> {
+  const a = { line: 0, column: 0, srcCode: "(internal)" };
   switch(t.tag) {
     case "number":
-      return { tag: "num", value: 0 }
+      return { tag: "num", value: 0, a }
     case "bool":
-      return { tag: "bool", value: false }
+      return { tag: "bool", value: false, a }
     default:
-      return { tag: "none" }
+      return { tag: "none", a }
   }
 }
