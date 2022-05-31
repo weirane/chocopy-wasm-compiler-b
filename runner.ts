@@ -138,6 +138,13 @@ ${BuiltinLib.map(x=>`    (func $${x.name} (import "imports" "${x.name}") ${"(par
     (func $set$length (import "libset" "set$length") (param $baseAddr i32) (result i32))
     (func $set$remove (import "libset" "set$remove") (param $baseAddr i32) (param $key i32) (result i32))
     ${globalImports}
+
+    (table 100 funcref)
+    (elem (i32.const 0) 
+      $Clo_0_adder$__call__
+    )
+    (type $clo2 (func (param i32) (param i32) (result i32)))
+
     ${globalDecls}
     ${config.functions}
     ${compiled.functions}

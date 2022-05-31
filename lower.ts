@@ -135,7 +135,7 @@ function flattenStmt(s : AST.Stmt<[Type, SourceLocation]>, blocks: Array<IR.Basi
       var [ninits, nstmts, nval] = flattenExprToVal(s.value, blocks, env);
       if(s.obj.a[0].tag !== "class") { throw new Error("Compiler's cursed, go home."); }
       const classdata = env.classes.get(s.obj.a[0].name);
-      const offset : IR.Value<[Type, SourceLocation]> = { a:s.a, tag: "wasmint", value: classdata.get(s.field)[0] };
+      const offset : IR.Value<[Type, SourceLocation]> = { a:s.a, tag: "wasmint", value: classdata.get(s.field)[0] + 4}; // HACK
       pushStmtsToLastBlock(blocks,
         ...ostmts, ...nstmts, {
           tag: "store",
@@ -391,6 +391,23 @@ function flattenExprToExpr(e : AST.Expr<[Type, SourceLocation]>, blocks: Array<I
           arguments: callvals
         }
       ];
+    case "closure-call": {
+      const callpairs = e.arguments.map(a => flattenExprToVal(a, blocks, env));
+      const callinits = callpairs.map(cp => cp[0]).flat();
+      const callstmts = callpairs.map(cp => cp[1]).flat();
+      const callvals = callpairs.map(cp => cp[2]).flat();
+      return [ callinits, callstmts,
+        {
+          tag: "closure-call",
+          closure: {
+            a: e.a, // TODO arbitrary?
+            tag: "id", 
+            name: e.name
+          },
+          arguments: callvals
+        }
+      ];
+    }
     case "method-call": {
       const [objinits, objstmts, objval] = flattenExprToVal(e.obj, blocks, env);
       const argpairs = e.arguments.map(a => flattenExprToVal(a, blocks, env));
@@ -427,7 +444,7 @@ function flattenExprToExpr(e : AST.Expr<[Type, SourceLocation]>, blocks: Array<I
         a: e.a,
         tag: "load",
         start: oval,
-        offset: { tag: "wasmint", value: offset }}];
+        offset: { tag: "wasmint", value: offset + 4 }}]; // HACK
     }
     case "index":
       const [oinits, ostmts, oval] = flattenExprToVal(e.obj, blocks, env);
@@ -456,17 +473,26 @@ function flattenExprToExpr(e : AST.Expr<[Type, SourceLocation]>, blocks: Array<I
       const classdata = env.classes.get(e.name);
       const fields = [...classdata.entries()];
       const newName = generateName("newObj");
-      const alloc : IR.Expr<[Type, SourceLocation]> = { a:e.a, tag: "alloc", amount: { a:e.a, tag: "wasmint", value: fields.length } };
+      const alloc : IR.Expr<[Type, SourceLocation]> = { a:e.a, tag: "alloc", amount: { a:e.a, tag: "wasmint", value: fields.length + 1} }; // HACK
       const assigns : IR.Stmt<[Type, SourceLocation]>[] = fields.map(f => {
         const [_, [index, value]] = f;
         return {
           a: e.a,
           tag: "store",
           start: { tag: "id", name: newName },
-          offset: { tag: "wasmint", value: index },
+          offset: { tag: "wasmint", value: index + 4 }, // HACK
           value: value
         }
       });
+
+      // vtable offset of the current class
+      assigns.push({
+        a: e.a,
+        tag: "store",
+        start: { tag: "id", name: newName },
+        offset: { tag: "wasmint", value: 0 }, 
+        value: { tag: "wasmint", value: 0 }
+      })
 
       return [
         [ { name: newName, type: e.a[0], value: { a: e.a, tag: "none" } }],

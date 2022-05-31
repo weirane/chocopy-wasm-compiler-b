@@ -187,6 +187,16 @@ function codeGenExpr(expr: Expr<[Type, SourceLocation]>, env: GlobalEnv): Array<
       valStmts.push(`(call $${expr.name})`);
       return valStmts;
 
+    case "closure-call": {
+      return [
+        ...codeGenValue(expr.closure, env), // self
+        ...expr.arguments.map((arg) => codeGenValue(arg, env)).flat(), // args
+
+        ...codeGenValue(expr.closure, env), // heap load self  (vtable offset)
+        "(i32.load)",                       // heap load self
+        `(call_indirect (type $clo2))`
+      ]
+    }
     case "alloc":
       return [
         ...codeGenValue(expr.amount, env),

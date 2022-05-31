@@ -58,6 +58,7 @@ export type Expr<A> =
   | {  a?: A, tag: "comprehension", type: Type, lhs: Expr<A>, item: string, iterable: Expr<A>, ifcond?: Expr<A> } // comprehension expression
   | {  a?: A, tag: "ternary", exprIfTrue: Expr<A>, ifcond: Expr<A>, exprIfFalse: Expr<A> } // ternary expression
   | {  a?: A, tag: "non-paren-vals", values: Array<Expr<A>> }
+  | {  a?: A, tag: "closure-call", name: string, arguments: Array<Expr<A>>, genericArgs?: Array<Type>} 
 
 export type Literal<A> = 
     { a?: A, tag: "num", value: number }
