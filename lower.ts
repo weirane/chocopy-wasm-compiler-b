@@ -3,6 +3,7 @@ import * as IR from './ir';
 import { Type, SourceLocation } from './ast';
 import { GlobalEnv } from './compiler';
 import { NUM, BOOL, NONE, CLASS } from "./utils";
+import {allClosures} from './closure';
 
 const nameCounters : Map<string, number> = new Map();
 function generateName(base : string) : string {
@@ -491,7 +492,7 @@ function flattenExprToExpr(e : AST.Expr<[Type, SourceLocation]>, blocks: Array<I
         tag: "store",
         start: { tag: "id", name: newName },
         offset: { tag: "wasmint", value: 0 }, 
-        value: { tag: "wasmint", value: 0 }
+        value: { tag: "wasmint", value: allClosures.indexOf(e.name) }
       })
 
       return [

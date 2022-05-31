@@ -15,6 +15,7 @@ import { lowerProgram } from './lower';
 import { BuiltinLib } from './builtinlib';
 import { BlobOptions } from 'buffer';
 import { removeGenerics } from './remove-generics';
+import {allClosures} from './closure';
 
 export type Config = {
   importObject: any;
@@ -139,9 +140,9 @@ ${BuiltinLib.map(x=>`    (func $${x.name} (import "imports" "${x.name}") ${"(par
     (func $set$remove (import "libset" "set$remove") (param $baseAddr i32) (param $key i32) (result i32))
     ${globalImports}
 
-    (table 100 funcref)
+    (table ${allClosures.length} funcref)
     (elem (i32.const 0) 
-      $Clo_0_adder$__call__
+${allClosures.map(c => `        $${c}$__call__`).join("\n")}
     )
     (type $clo2 (func (param i32) (param i32) (result i32)))
 

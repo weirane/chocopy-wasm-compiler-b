@@ -3,6 +3,8 @@ import { TypeCheckError } from './error_reporting'
 import { NUM, BOOL, NONE, CLASS } from './utils';
 
 let closureClassCounter = 0
+// closures that has one argument
+export const allClosures: string[] = [];
 
 export function translateClosuresToClasses(program : Program<SourceLocation>): Program<SourceLocation> {
   closureClassCounter = 0
@@ -26,9 +28,12 @@ function translateClosuresInFunc(f: FunDef<SourceLocation>, program: Program<Sou
       //     def g <-- closure
       const g = stmt.func
 
-      // TODO
       // generate a name C for the closure class
       const gClassName = genClosureClassName(g.name)
+      if (g.parameters.length !== 1) {
+        throw new Error("only closures with 1 argument is supported");
+      }
+      allClosures.push(gClassName)
 
       // escape analysis
       // get a list of closure variables (focus on read-only now) and their types
