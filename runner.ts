@@ -15,7 +15,7 @@ import { lowerProgram } from './lower';
 import { BuiltinLib } from './builtinlib';
 import { BlobOptions } from 'buffer';
 import { removeGenerics } from './remove-generics';
-import {allClosures} from './closure';
+import {allClosures, closureNargs} from './closure';
 
 export type Config = {
   importObject: any;
@@ -144,7 +144,7 @@ ${BuiltinLib.map(x=>`    (func $${x.name} (import "imports" "${x.name}") ${"(par
     (elem (i32.const 0) 
 ${allClosures.map(c => `        $${c}$__call__`).join("\n")}
     )
-    (type $clo2 (func (param i32) (param i32) (result i32)))
+${Array.from(closureNargs).map(n => `(type $$clo${n+1} (func ${'(param i32) '.repeat(n+1)}(result i32)))`).join('\n')}
 
     ${globalDecls}
     ${config.functions}

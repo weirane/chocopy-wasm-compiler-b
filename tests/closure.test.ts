@@ -120,4 +120,44 @@ f = getAdder(1)
 print(f(2))
   `, ["3"])
 
+  assertPrint("2 arguments", `
+def getAdder(a:int) -> Callable[[int, int], int]:
+    def adder(b: int, c: int) -> int:
+        return a + b + c
+    return adder
+a: int = 10
+f: Callable[[int, int], int] = None
+f = getAdder(1)
+print(f(2, 3))
+  `, ["6"])
+
+  assertPrint("3 arguments", `
+def getAdder(a:int) -> Callable[[int, int, int], int]:
+    def adder(b: int, c: int, d: int) -> int:
+        return a + b + c + d
+    return adder
+a: int = 10
+f: Callable[[int, int, int], int] = None
+f = getAdder(1)
+print(f(2, 3, a))
+  `, ["16"])
+
+  assertPrint("variable argument number", `
+def getAdder(a:int) -> Callable[[int], int]:
+    def adder(b: int) -> int:
+        return a + b
+    return adder
+
+def getAdder2(a:int) -> Callable[[int, int], int]:
+    def adder(b: int, c: int) -> int:
+        return a + b + c
+    return adder
+
+f: Callable[[int], int] = None
+g: Callable[[int, int], int] = None
+f = getAdder(1)
+g = getAdder2(2)
+print(g(3, 4))
+print(f(2))
+  `, ["9", "3"])
 })

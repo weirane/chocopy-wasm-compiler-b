@@ -4,10 +4,13 @@ import { NUM, BOOL, NONE, CLASS } from './utils';
 
 let closureClassCounter = 0
 // closures that has one argument
-export const allClosures: string[] = [];
+export let allClosures: string[] = [];
+export const closureNargs: Set<number> = new Set();
 
 export function translateClosuresToClasses(program : Program<SourceLocation>): Program<SourceLocation> {
   closureClassCounter = 0
+  allClosures = []
+  closureNargs.clear()
 
   console.log("before translating closures to classses")
   console.log(program)
@@ -30,10 +33,8 @@ function translateClosuresInFunc(f: FunDef<SourceLocation>, program: Program<Sou
 
       // generate a name C for the closure class
       const gClassName = genClosureClassName(g.name)
-      if (g.parameters.length !== 1) {
-        throw new Error("only closures with 1 argument is supported");
-      }
       allClosures.push(gClassName)
+      closureNargs.add(g.parameters.length)
 
       // escape analysis
       // get a list of closure variables (focus on read-only now) and their types

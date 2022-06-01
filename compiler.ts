@@ -194,7 +194,7 @@ function codeGenExpr(expr: Expr<[Type, SourceLocation]>, env: GlobalEnv): Array<
 
         ...codeGenValue(expr.closure, env), // heap load self  (vtable offset)
         "(i32.load)",                       // heap load self
-        `(call_indirect (type $clo2))`
+        `(call_indirect (type $$clo${expr.arguments.length + 1}))`
       ]
     }
     case "alloc":
