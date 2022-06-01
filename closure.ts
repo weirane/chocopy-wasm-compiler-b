@@ -12,13 +12,9 @@ export function translateClosuresToClasses(program : Program<SourceLocation>): P
   allClosures = []
   closureNargs.clear()
 
-  console.log("before translating closures to classses")
-  console.log(program)
   program.funs.forEach(func => translateClosuresInFunc(func, program))
   // TODO methods in class might also contain closures
 
-  console.log("after translating closures to classses")
-  console.log(program)
   return program
 }
 
@@ -69,7 +65,6 @@ function translateClosuresInFunc(f: FunDef<SourceLocation>, program: Program<Sou
           }
         }
       }
-      console.log(closureVars)
 
       // generate a class C
       // TODO C is a subclass of Callable...
