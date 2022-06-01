@@ -136,7 +136,7 @@ function flattenStmt(s : AST.Stmt<[Type, SourceLocation]>, blocks: Array<IR.Basi
       var [ninits, nstmts, nval] = flattenExprToVal(s.value, blocks, env);
       if(s.obj.a[0].tag !== "class") { throw new Error("Compiler's cursed, go home."); }
       const classdata = env.classes.get(s.obj.a[0].name);
-      const offset : IR.Value<[Type, SourceLocation]> = { a:s.a, tag: "wasmint", value: classdata.get(s.field)[0] + 4}; // HACK
+      const offset : IR.Value<[Type, SourceLocation]> = { a:s.a, tag: "wasmint", value: classdata.get(s.field)[0] };
       pushStmtsToLastBlock(blocks,
         ...ostmts, ...nstmts, {
           tag: "store",
@@ -466,7 +466,7 @@ function flattenExprToExpr(e : AST.Expr<[Type, SourceLocation]>, blocks: Array<I
         a: e.a,
         tag: "load",
         start: oval,
-        offset: { tag: "wasmint", value: offset + 4 }}]; // HACK
+        offset: { tag: "wasmint", value: offset }}];
     }
     case "index":
       const [oinits, ostmts, oval] = flattenExprToVal(e.obj, blocks, env);
@@ -495,14 +495,14 @@ function flattenExprToExpr(e : AST.Expr<[Type, SourceLocation]>, blocks: Array<I
       const classdata = env.classes.get(e.name);
       const fields = [...classdata.entries()];
       const newName = generateName("newObj");
-      const alloc : IR.Expr<[Type, SourceLocation]> = { a:e.a, tag: "alloc", amount: { a:e.a, tag: "wasmint", value: fields.length + 1} }; // HACK
+      const alloc : IR.Expr<[Type, SourceLocation]> = { a:e.a, tag: "alloc", amount: { a:e.a, tag: "wasmint", value: fields.length + 1} }; // for vtable index
       const assigns : IR.Stmt<[Type, SourceLocation]>[] = fields.map(f => {
         const [_, [index, value]] = f;
         return {
           a: e.a,
           tag: "store",
           start: { tag: "id", name: newName },
-          offset: { tag: "wasmint", value: index + 4 }, // HACK
+          offset: { tag: "wasmint", value: index },
           value: value
         }
       });

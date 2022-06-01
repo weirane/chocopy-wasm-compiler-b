@@ -61,7 +61,7 @@ export function augmentEnv(env: GlobalEnv, prog: Program<[Type, SourceLocation]>
   });
   prog.classes.forEach(cls => {
     const classFields = new Map();
-    cls.fields.forEach((field, i) => classFields.set(field.name, [i, field.value]));
+    cls.fields.forEach((field, i) => classFields.set(field.name, [i+1, field.value]));
     newClasses.set(cls.name, classFields);
   });
   return {
