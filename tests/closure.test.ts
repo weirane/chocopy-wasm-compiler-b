@@ -160,4 +160,25 @@ g = getAdder2(2)
 print(g(3, 4))
 print(f(2))
   `, ["9", "3"])
+
+  assertPrint("first class function", `
+def getAdder(a:int) -> Callable[[int], int]:
+    def adder(b: int) -> int:
+        return a + b
+    return adder
+
+def compose(f: Callable[[int], int], g: Callable[[int], int]) -> Callable[[int], int]:
+    def h(a: int) -> int:
+        return f(g(a))
+    return h
+
+add1: Callable[[int], int] = None
+add2: Callable[[int], int] = None
+add3: Callable[[int], int] = None
+
+add1 = getAdder(1)
+add2 = getAdder(2)
+add3 = compose(add1, add2)
+print(add3(3))
+  `, ["6"])
 })
