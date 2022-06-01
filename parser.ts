@@ -773,8 +773,8 @@ export function traverseType(c : TreeCursor, s : string) : Type {
         return CLASS(className, genericTypes);
         }
       }
-      return CLASS(name);
     }
+      return CLASS(name);
     }
   }
 }
