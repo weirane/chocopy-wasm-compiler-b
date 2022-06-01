@@ -1,7 +1,7 @@
 import { assertPrint, assertFail, assertTCFail, assertTC, assertOptimize, assertPass } from "./asserts.test";
 import { NUM, BOOL, NONE, CLASS } from "./helpers.test"
 
-describe("Optimization tests", () => {
+xdescribe("Optimization tests", () => {
   // 1
   assertOptimize("Constant Folding (add in print)", `print(100 + 20 + 3)`);
   // 2

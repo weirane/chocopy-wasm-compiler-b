@@ -59,7 +59,6 @@ export class BasicREPL {
         currentGlobals[k] = maybeGlobal;
       }
     });
-    this.importObject.env = currentGlobals; //seems useless for now
     return result;
   }
 
