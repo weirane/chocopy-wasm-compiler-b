@@ -167,18 +167,14 @@ def getAdder(a:int) -> Callable[[int], int]:
         return a + b
     return adder
 
-def compose(f: Callable[[int], int], g: Callable[[int], int]) -> Callable[[int], int]:
-    def h(a: int) -> int:
-        return f(g(a))
-    return h
+def compose(f: Callable[[int], int], g: Callable[[int], int], a: int) -> int:
+    return f(g(a))
 
 add1: Callable[[int], int] = None
 add2: Callable[[int], int] = None
-add3: Callable[[int], int] = None
 
 add1 = getAdder(1)
 add2 = getAdder(2)
-add3 = compose(add1, add2)
-print(add3(3))
+print(compose(add1, add2, 3))
   `, ["6"])
 })

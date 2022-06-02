@@ -658,8 +658,25 @@ export function tcExpr(env : GlobalTypeEnv, locals : LocalTypeEnv, expr : Expr<S
             throw new TypeCheckError("Function call type mismatch: " + expr.name, expr.a);
            }
       } else if(env.globals.has(expr.name)) { 
-        // TODO local 
         const t = env.globals.get(expr.name)
+        if (t.tag !== "func") {
+          throw new TypeCheckError(`${expr.name} is not callable`);
+        }
+        console.log(`calling a closure ${expr.name}`)
+        const actuals = expr.arguments.map(arg => tcExpr(env, locals, arg))
+        const formals = t.args
+        if (formals.length !== actuals.length || actuals.some((actual, i) => !isAssignable(env, actual.a[0], formals[i]))) {
+          throw new TypeCheckError("closure call type mismatch: " + expr.name, expr.a);
+        }
+        return {
+          ...expr,
+          a: [t.ret, expr.a],
+          tag: "closure-call",
+          name: expr.name,
+          arguments: expr.arguments.map(arg => tcExpr(env, locals, arg))
+        }
+      } else if (locals.vars.has(expr.name)) {
+        const t = locals.vars.get(expr.name)
         if (t.tag !== "func") {
           throw new TypeCheckError(`${expr.name} is not callable`);
         }
